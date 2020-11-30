@@ -3,11 +3,14 @@ import requests
 from django.conf import settings
 from urllib.parse import urljoin
 
+from .utils import retry
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG if settings.DEBUG else logging.INFO)
 
 api = urljoin(settings.NOMAD_URL, 'v1')
 consul_api = urljoin(settings.CONSUL_URL, 'v1')
+TIMEOUT = 7  # seconds
 
 
 class NoAllocsFoundError(RuntimeError):
@@ -28,8 +31,9 @@ def response(res, binary=False):
     res.raise_for_status()
 
 
+@retry()
 def jobs():
-    return response(requests.get(f'{api}/jobs'))
+    return response(requests.get(f'{api}/jobs', timeout=TIMEOUT))
 
 
 def job(id, name, taskgroups):
@@ -44,14 +48,16 @@ def job(id, name, taskgroups):
     }
 
 
+@retry()
 def launch(definition):
     try:
-        response(requests.post(f'{api}/jobs', json=definition))
+        response(requests.post(f'{api}/jobs', json=definition, timeout=TIMEOUT))
     except Exception as err:
-        log.error('Failed to create nomad job: %s', err.response.text)
+        log.error('Failed to create nomad job: %s', err)
         raise
 
 
+@retry()
 def status(job_id):
     try:
         return alloc(job_id)['ClientStatus']
@@ -59,12 +65,13 @@ def status(job_id):
         return None
 
 
+@retry()
 def kill(job_id):
-    response(requests.delete(f'{api}/job/{job_id}'))
+    response(requests.delete(f'{api}/job/{job_id}', timeout=TIMEOUT))
 
 
 def alloc(job_id):
-    allocs = response(requests.get(f'{api}/job/{job_id}/allocations'))
+    allocs = response(requests.get(f'{api}/job/{job_id}/allocations', timeout=TIMEOUT))
     if not allocs:
         raise NoAllocsFoundError(f"No allocs found for job {job_id}")
     allocs.sort(key=lambda a: a['CreateTime'])
@@ -77,7 +84,7 @@ def cat(job_id, path, binary=False):
     try:
         return response(requests.get(
             f'{api}/client/fs/cat/{alloc_id}',
-            params={'path': path},
+            params={'path': path}, timeout=TIMEOUT,
         ), binary)
 
     except requests.exceptions.HTTPError as err:
@@ -95,10 +102,11 @@ def logs(job_id, type):
             'task': 'vm',
             'type': type,
             'plain': 'true',
-        },
+        }, timeout=TIMEOUT,
     ))
 
 
+@retry()
 def health(job_id):
     service = f'vmck-{job_id}-ssh'
-    return response(requests.get(f'{consul_api}/health/checks/{service}'))
+    return response(requests.get(f'{consul_api}/health/checks/{service}', timeout=TIMEOUT))
