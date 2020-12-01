@@ -51,7 +51,9 @@ def job(id, name, taskgroups):
 @retry()
 def launch(definition):
     try:
-        response(requests.post(f'{api}/jobs', json=definition, timeout=TIMEOUT))
+        response(requests.post(f'{api}/jobs',
+                               json=definition,
+                               timeout=TIMEOUT))
     except Exception as err:
         log.error('Failed to create nomad job: %s', err)
         raise
@@ -71,7 +73,8 @@ def kill(job_id):
 
 
 def alloc(job_id):
-    allocs = response(requests.get(f'{api}/job/{job_id}/allocations', timeout=TIMEOUT))
+    allocs = response(requests.get(f'{api}/job/{job_id}/allocations',
+                                   timeout=TIMEOUT))
     if not allocs:
         raise NoAllocsFoundError(f"No allocs found for job {job_id}")
     allocs.sort(key=lambda a: a['CreateTime'])
@@ -109,4 +112,5 @@ def logs(job_id, type):
 @retry()
 def health(job_id):
     service = f'vmck-{job_id}-ssh'
-    return response(requests.get(f'{consul_api}/health/checks/{service}', timeout=TIMEOUT))
+    return response(requests.get(f'{consul_api}/health/checks/{service}',
+                                 timeout=TIMEOUT))

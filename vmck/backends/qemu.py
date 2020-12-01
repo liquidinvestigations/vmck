@@ -26,6 +26,16 @@ def constraints():
     ]
 
 
+def spreads():
+    return [
+        {
+            'Attribute': '${attr.unique.hostname}',
+            'SpreadTarget': None,
+            'Weight': 100,
+        },
+    ]
+
+
 def resources(vm_port, options):
     network = {
         'ReservedPorts': [
@@ -53,7 +63,7 @@ def services(job):
                     'Type': 'tcp',
                     'PortLabel': 'ssh',
                     'Interval': 1 * second,
-                    'Timeout':  1 * second,
+                    'Timeout': 1 * second,
                 },
             ],
         },
@@ -127,6 +137,7 @@ def task_group(job, options):
     return {
         'name': 'test',
         'Constraints': constraints(),
+        'Spreads': spreads(),
         'tasks': tasks,
         'RestartPolicy': {
             'Attempts': 0,
