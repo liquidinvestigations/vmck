@@ -10,7 +10,7 @@ log.setLevel(logging.DEBUG if settings.DEBUG else logging.INFO)
 
 api = urljoin(settings.NOMAD_URL, 'v1')
 consul_api = urljoin(settings.CONSUL_URL, 'v1')
-TIMEOUT = 7  # seconds
+TIMEOUT = 15  # seconds
 
 
 class NoAllocsFoundError(RuntimeError):

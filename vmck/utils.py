@@ -19,7 +19,7 @@ def is_true(value):
     return text in ['1', 'yes', 'true', 'on', 'enabled']
 
 
-def retry(count=4, wait_sec=1, exp=2):
+def retry(count=4, wait_sec=1, exp=3):
     def _retry(f):
         def wrapper(*args, **kwargs):
             current_wait = wait_sec
@@ -32,11 +32,12 @@ def retry(count=4, wait_sec=1, exp=2):
                         raise
 
                     log.warning(
-                        "%s() - #%s/%s retrying in %s sec",
+                        "%s() - #%s/%s retrying in %s sec: %s",
                         f.__qualname__,
                         i + 1,
                         count,
                         current_wait,
+                        str(e),
                     )
                     sleep(current_wait)
                     current_wait = int(current_wait * exp)
